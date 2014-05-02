@@ -27,12 +27,10 @@
 DHT dht(DHTPIN, DHTTYPE);
 Adafruit_CC3000 cc3000 = Adafruit_CC3000(ADAFRUIT_CC3000_CS, ADAFRUIT_CC3000_IRQ, ADAFRUIT_CC3000_VBAT,
                                          SPI_CLOCK_DIV2);
-                                         
-// Local server IP, port, and repository (change with your settings !)
-uint32_t ip = cc3000.IP2U32(192,168,0,1);
-int port = 8887;
-String repository = "/wifi-weather-station/";
-                                         
+
+// Server IP
+uint32_t ip = 0;
+
 void setup(void)
 {
  
@@ -40,7 +38,8 @@ void setup(void)
   dht.begin();
   
   Serial.begin(115200);
-    
+  Serial.print("Initializing connection...");
+
   // Initialise the CC3000 module
   if (!cc3000.begin())
   {
@@ -56,8 +55,19 @@ void setup(void)
   while (!cc3000.checkDHCP())
   {
     delay(100);
-  }  
-  
+  }
+
+  char host[] = "dweet.io";
+  Serial.print(host);
+  Serial.print(F(" -> "));
+  while  (ip  ==  0)  {
+    if  (!cc3000.getHostByName(host, &ip))  {
+      Serial.println(F("Couldn't resolve!"));
+    }
+    delay(500);
+  }
+  cc3000.printIPdotsRev(ip);
+  Serial.println();
 }
 
 void loop(void)
@@ -66,24 +76,27 @@ void loop(void)
     // Measure the humidity & temperature
     float h = dht.readHumidity();
     float t = dht.readTemperature();
-     
-    // Transform to String
-    String temperature = String((int) t);
+    // Convert to fahrenheit tenths of a degree
+    t = (t * 9 / 5 + 32) * 10;
+
+    // Transform to string (temp formatted to include tenths of a degree)
+    String temp = String((int) t);
+    temp = temp.substring(0, temp.length() - 1) + "." + temp[temp.length() - 1];
     String humidity = String((int) h);
-    
+
     // Print data
     Serial.print("Temperature: ");
-    Serial.println(temperature);
+    Serial.println(temp);
     Serial.print("Humidity: ");
     Serial.println(humidity);
     Serial.println("");
     
     // Send request
-    String request = "GET "+ repository + "sensor.php?temp=" + temperature + "&hum=" + humidity + " HTTP/1.0";
+    String request = "GET /dweet/for/weatherstation?temp=" + temp + "&hum=" + humidity + " HTTP/1.0";
     send_request(request);
-    
-    // Update every second
-    delay(1000);
+
+    // Update every three minutes
+    delay(180000);
 }
 
 // Function to send a TCP request and get the result as a string
@@ -91,8 +104,8 @@ void send_request (String request) {
      
     // Connect    
     Serial.println("Starting connection to server...");
-    Adafruit_CC3000_Client client = cc3000.connectTCP(ip, port);
-    
+    Adafruit_CC3000_Client client = cc3000.connectTCP(ip, 80);
+
     // Send request
     if (client.connected()) {
       client.println(request);      
@@ -106,12 +119,14 @@ void send_request (String request) {
     while (client.connected()) {
       while (client.available()) {
 
-      // Read answer
-      char c = client.read();
+        // Read answer
+        char c = client.read();
+        // Serial.print(c);
       }
     }
+    Serial.println();
     Serial.println("Closing connection");
-    Serial.println("");
+    Serial.println();
     client.close();
     
 }
