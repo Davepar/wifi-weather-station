@@ -19,6 +19,9 @@
 #define WLAN_PASS       "yourPassword"
 #define WLAN_SECURITY   WLAN_SEC_WPA2 // This can be WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2
 
+// dweet.io ID. Change to a unique ID.
+#define DWEET_ID        "weatherstation"
+
 // DHT11 sensor pins
 #define DHTPIN 7 
 #define DHTTYPE DHT11
@@ -92,7 +95,7 @@ void loop(void)
     Serial.println("");
     
     // Send request
-    String request = "GET /dweet/for/weatherstation?temp=" + temp + "&hum=" + humidity + " HTTP/1.0";
+    String request = "GET /dweet/for/" + DWEET_ID + "?temp=" + temp + "&hum=" + humidity + " HTTP/1.0";
     send_request(request);
 
     // Update every three minutes
