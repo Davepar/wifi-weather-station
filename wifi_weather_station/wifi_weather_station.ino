@@ -95,7 +95,7 @@ void loop(void)
     Serial.println("");
     
     // Send request
-    String request = "GET /dweet/for/" + DWEET_ID + "?temp=" + temp + "&hum=" + humidity + " HTTP/1.0";
+    String request = String("GET /dweet/for/") + DWEET_ID + "?temp=" + temp + "&hum=" + humidity + " HTTP/1.0";
     send_request(request);
 
     // Update every three minutes
